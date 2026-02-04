@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KiritoUltraOS | Administrator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #030305;
+            --bg-panel: #0a0a0c;
+            --glass: rgba(15, 15, 20, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --primary: #00d2ff; /* Cyan Kirito */
+            --primary-dim: rgba(0, 210, 255, 0.15);
+            --accent: #7000ff; /* Electric Purple */
+            --text-main: #ffffff;
+            --text-dim: #94a3b8;
+            --danger: #ff3366;
+            --success: #00ff9d;
+            --premium: #ffd700; /* Gold */
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; user-select: none; }
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh; overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+                url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop'); 
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        /* SPLASH SCREEN */
+        #splash { position: fixed; inset: 0; z-index: 9999; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s ease; }
+        .glitch-text { font-family: 'JetBrains Mono'; font-size: 60px; font-weight: 800; color: white; text-shadow: 2px 2px var(--accent); position: relative; }
+        .btn-start { 
+            padding: 15px 40px; border-radius: 4px; border: 1px solid var(--primary); 
+            background: rgba(0, 210, 255, 0.1); color: var(--primary); 
+            font-family: 'JetBrains Mono'; font-weight: 700; letter-spacing: 2px;
+            cursor: pointer; transition: 0.3s; margin-top: 40px;
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.2);
+        }
+        .btn-start:hover { background: var(--primary); color: #000; box-shadow: 0 0 50px var(--primary); }
+
+        /* APP LAYOUT */
+        #app { display: grid; grid-template-columns: 280px 1fr 340px; height: 100vh; padding: 20px; gap: 20px; opacity: 0; transition: opacity 1s; filter: blur(0px); }
+        
+        /* SIDEBAR */
+        .sidebar { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 25px; backdrop-filter: blur(40px); display: flex; flex-direction: column; gap: 12px; }
+        .logo { font-family: 'JetBrains Mono', monospace; font-weight: 800; color: white; margin-bottom: 25px; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+        .logo span { color: var(--primary); }
+        
+        .menu-item { padding: 14px 18px; border-radius: 12px; cursor: pointer; color: var(--text-dim); font-weight: 500; transition: 0.3s; display: flex; align-items: center; gap: 15px; font-size: 15px; border: 1px solid transparent; }
+        .menu-item:hover { background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.1); }
+        .menu-item.active { background: var(--primary-dim); color: var(--primary); border-color: rgba(0, 210, 255, 0.3); box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); }
+        
+        .premium-btn {
+            margin-top: auto; padding: 15px; border-radius: 15px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.1));
+            border: 1px solid rgba(255, 215, 0, 0.3); color: var(--premium);
+            text-align: center; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .premium-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2); }
+        .premium-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: 0.5s; }
+        .premium-btn:hover::before { left: 100%; }
+
+        /* MAIN AREA */
+        .main-content { position: relative; overflow: hidden; display: flex; flex-direction: column; border-radius: 20px; background: var(--glass); border: 1px solid var(--glass-border); backdrop-filter: blur(40px); }
+        .tab-view { display: none; height: 100%; flex-direction: column; animation: fadeIn 0.4s ease; padding: 30px; overflow-y: auto; }
+        .tab-view.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--glass-border); }
+        .header-bar h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        
+        /* LIBRARY CARDS */
+        .grid-books { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+        .book-card { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px; cursor: pointer; transition: 0.4s; position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 10px; }
+        .book-card:hover { transform: translateY(-5px); border-color: var(--primary); background: rgba(0, 210, 255, 0.05); }
+        .book-icon { font-size: 32px; margin-bottom: 5px; }
+        .book-card h3 { font-size: 18px; }
+        
+        /* EXAM STYLES */
+        .subject-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .subject-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 20px; border-radius: 12px; color: var(--text-dim); cursor: pointer; transition: 0.3s; font-weight: 600; text-align: center; }
+        .subject-btn:hover, .subject-btn.selected { background: var(--primary); color: #000; border-color: var(--primary); box-shadow: 0 0 20px rgba(0,210,255,0.4); }
+
+        /* RIGHT PANEL */
+        .right-panel { display: flex; flex-direction: column; gap: 20px; }
+        .widget { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 25px; backdrop-filter: blur(40px); }
+        
+        /* MUSIC */
+        .disk-spin { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #111; margin: 0 auto; animation: spin 10s linear infinite; box-shadow: 0 0 40px rgba(0, 210, 255, 0.2); object-fit: cover; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* MODALS */
+        #reader, #premium-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 20000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        
+        /* READER */
+        .doc-box { width: 900px; max-width: 90%; height: 90vh; background: #0b0b0d; border: 1px solid var(--glass-border); border-radius: 20px; display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        .doc-body { flex: 1; padding: 40px; overflow-y: auto; font-size: 16px; line-height: 1.8; color: #d4d4d8; font-family: 'Times New Roman', serif; }
+        .formula { background: rgba(0, 210, 255, 0.05); border-left: 3px solid var(--primary); padding: 15px; margin: 15px 0; font-family: 'JetBrains Mono'; color: var(--primary); }
+        .chap-title { color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-top: 30px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* PREMIUM MODAL DESIGN */
+        .pricing-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1000px; }
+        .price-card { background: #121214; border: 1px solid var(--glass-border); padding: 30px; border-radius: 20px; width: 300px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; position: relative; }
+        .price-card:hover { transform: translateY(-10px); border-color: var(--primary); }
+        .price-card.popular { border-color: var(--premium); box-shadow: 0 0 30px rgba(255, 215, 0, 0.15); transform: scale(1.05); z-index: 2; background: #1a1a1e; }
+        .price-card h3 { font-size: 20px; margin-bottom: 10px; color: var(--text-dim); }
+        .price-card.popular h3 { color: var(--premium); font-weight: 800; letter-spacing: 1px; }
+        .price { font-size: 36px; font-weight: 700; margin-bottom: 20px; color: white; }
+        .features { list-style: none; width: 100%; margin-bottom: 30px; }
+        .features li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #a1a1aa; font-size: 14px; display: flex; gap: 10px; }
+        .features li::before { content: '✓'; color: var(--success); }
+        .btn-buy { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .btn-buy.gold { background: linear-gradient(135deg, #ffd700, #ff8c00); color: black; box-shadow: 0 5px 15px rgba(255, 140, 0, 0.3); }
+        .btn-buy.basic { background: rgba(255,255,255,0.1); color: white; }
+        
+        /* EXAM UI */
+        .question-item { background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid transparent; transition: 0.3s; }
+        .question-item:hover { background: rgba(255,255,255,0.04); }
+        .q-opt { display: block; padding: 12px 15px; margin: 8px 0; background: rgba(0,0,0,0.4); border-radius: 8px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .q-opt:hover { border-color: var(--primary); color: var(--primary); }
+        .q-opt input { margin-right: 10px; accent-color: var(--primary); }
+
+        /* SCHEDULE TABLE */
+        .schedule-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        .schedule-table th { text-align: left; color: var(--text-dim); padding: 10px; font-size: 13px; text-transform: uppercase; }
+        .schedule-table td { background: rgba(255,255,255,0.03); padding: 15px; border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); }
+        .schedule-table tr td:first-child { border-radius: 10px 0 0 10px; border-left: 1px solid var(--glass-border); font-weight: bold; color: var(--primary); }
+        .schedule-table tr td:last-child { border-radius: 0 10px 10px 0; border-right: 1px solid var(--glass-border); }
+        .today-row td { background: rgba(0, 210, 255, 0.1) !important; border-color: rgba(0, 210, 255, 0.3) !important; }
+        
+    </style>
+</head>
+<body>
+
+    <div id="splash">
+        <div class="glitch-text">KIRITO<span style="color:var(--primary)">ULTRA</span>_OS</div>
+        <p style="color: var(--text-dim); letter-spacing: 4px; margin-top: 10px;">SYSTEM ARCHITECTURE V.9.0</p>
+        <button class="btn-start" onclick="initApp()">INITIALIZE SYSTEM</button>
+    </div>
+
+    <audio id="audio" loop>
+        <source src="https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="app">
+        <div class="sidebar">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#00d2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17L12 22L22 17" stroke="#00d2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12L12 17L22 12" stroke="#00d2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                KIRITO<span>ULTRA</span>
+            </div>
+            
+            <div class="menu-item active" onclick="nav('library', this)">📚 Kho Tri Thức</div>
+            <div class="menu-item" onclick="nav('schedule', this)">📅 Lịch Hoạt Động</div>
+            <div class="menu-item" onclick="nav('exam', this)">⚔️ Đấu Trường (Exam)</div>
+            <div class="menu-item" onclick="nav('results', this)">🏆 Hồ Sơ Năng Lực</div>
+            <div class="menu-item" onclick="checkPremium()">🤖 Trợ Lý AI (Locked)</div>
+            
+            <div class="premium-btn" onclick="openPremium()">
+                <div style="font-weight: 800; font-size: 14px; margin-bottom: 5px;">👑 NÂNG CẤP VIP</div>
+                <div style="font-size: 11px; opacity: 0.8;">Mở khóa AI & Kho đề thi</div>
+            </div>
+
+            <div style="margin-top: 10px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px;">
+                <small style="color:var(--text-dim)">User ID: NVN_2026</small>
+                <div style="font-weight: 700; font-size: 15px; margin-top: 5px; color: white;">Nguyễn Văn Nguyên</div>
+                <small style="color: var(--success)">● System Online</small>
+            </div>
+        </div>
+
+        <div class="main-content">
+            
+            <div id="tab-library" class="tab-view active">
+                <div class="header-bar">
+                    <h2>KHO DỮ LIỆU TOÀN CẦU</h2>
+                    <span style="font-family: 'JetBrains Mono'; color: var(--primary);" id="clock">00:00</span>
+                </div>
+                <div class="grid-books">
+                    <div class="book-card" onclick="Reader.open('math')"><div class="book-icon">📐</div><h3>Toán Học Cao Cấp</h3><p style="color:var(--text-dim); font-size:12px">Hàm số, Tích phân, Số phức</p></div>
+                    <div class="book-card" onclick="Reader.open('phys')"><div class="book-icon">⚛️</div><h3>Vật Lý Lượng Tử</h3><p style="color:var(--text-dim); font-size:12px">Dao động, Sóng, Hạt nhân</p></div>
+                    <div class="book-card" onclick="Reader.open('chem')"><div class="book-icon">🧪</div><h3>Hóa Học Ứng Dụng</h3><p style="color:var(--text-dim); font-size:12px">Este, Kim loại, Polime</p></div>
+                    <div class="book-card" onclick="Reader.open('eng')"><div class="book-icon">🇬🇧</div><h3>Oxford English</h3><p style="color:var(--text-dim); font-size:12px">Advanced Grammar & IELTS</p></div>
+                    <div class="book-card" onclick="Reader.open('bio')"><div class="book-icon">🧬</div><h3>Sinh Học Gen</h3><p style="color:var(--text-dim); font-size:12px">Di truyền & Biến dị</p></div>
+                    <div class="book-card" onclick="Reader.open('lit')"><div class="book-icon">✒️</div><h3>Ngữ Văn Chuyên Sâu</h3><p style="color:var(--text-dim); font-size:12px">Lý luận & Phê bình</p></div>
+                </div>
+            </div>
+
+            <div id="tab-schedule" class="tab-view">
+                <div class="header-bar"><h2>THỜI GIAN BIỂU CHIẾN LƯỢC</h2></div>
+                <div style="overflow-x: auto;">
+                    <table class="schedule-table">
+                        <thead><tr><th>Timeline</th><th>Sáng (07:00 - 11:30)</th><th>Chiều (14:00 - 17:00)</th><th>Tối (19:30 - 23:00)</th></tr></thead>
+                        <tbody>
+                            <tr id="row-2"><td>THỨ 2</td><td>Toán (Đại số) • Vật Lý • Hóa Học</td><td>Anh Văn (IELTS) • Tin Học</td><td>Tự học Toán (Chuyên đề)</td></tr>
+                            <tr id="row-3"><td>THỨ 3</td><td>Ngữ Văn • Lịch Sử • Địa Lý</td><td>Toán (Hình học) • Thể chất</td><td>Giải đề Vật Lý</td></tr>
+                            <tr id="row-4"><td>THỨ 4</td><td>Hóa Học • Sinh Học • Toán</td><td>GDQP • Kỹ năng mềm</td><td>Luyện đề Hóa Học</td></tr>
+                            <tr id="row-5"><td>THỨ 5</td><td>Tiếng Anh • Ngữ Văn • Toán</td><td>Phụ đạo Hóa • Sinh</td><td>Học từ vựng & Listening</td></tr>
+                            <tr id="row-6"><td>THỨ 6</td><td>Vật Lý • Hóa • Sinh hoạt</td><td>Tự học tại Thư viện</td><td>Viết bài luận Văn</td></tr>
+                            <tr id="row-7"><td>THỨ 7</td><td>Luyện đề tổng hợp (KHTN)</td><td>Nghỉ ngơi / Thể thao</td><td>Tổng hợp kiến thức tuần</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-exam" class="tab-view">
+                <div class="header-bar">
+                    <h2 id="exam-title-display">TRUNG TÂM KHẢO THÍ</h2>
+                    <div id="timer" style="background:var(--danger); padding:5px 15px; border-radius:6px; font-weight:bold; font-family:'JetBrains Mono'; display:none; box-shadow: 0 0 10px var(--danger);">00:00</div>
+                </div>
+                
+                <div id="exam-start" style="text-align: center; padding: 40px;">
+                    <h1 style="color: var(--primary); margin-bottom: 10px; font-weight: 800;">CHỌN MÔN THI ĐẤU</h1>
+                    <p style="color: var(--text-dim);">Hệ thống sẽ trích xuất ngẫu nhiên từ ngân hàng 1000+ câu hỏi.</p>
+                    
+                    <div class="subject-grid">
+                        <div class="subject-btn" onclick="Exam.selectSubject('math', this)">Toán Học</div>
+                        <div class="subject-btn" onclick="Exam.selectSubject('phys', this)">Vật Lý</div>
+                        <div class="subject-btn" onclick="Exam.selectSubject('chem', this)">Hóa Học</div>
+                        <div class="subject-btn" onclick="Exam.selectSubject('eng', this)">Tiếng Anh</div>
+                        <div class="subject-btn" onclick="Exam.selectSubject('bio', this)">Sinh Học</div>
+                        <div class="subject-btn" onclick="Exam.selectSubject('lit', this)">Ngữ Văn</div>
+                    </div>
+
+                    <div id="start-area" style="margin-top: 30px; display: none;">
+                        <p id="selected-info" style="margin-bottom: 20px; font-weight: bold; color: var(--success); font-family: 'JetBrains Mono';"></p>
+                        <button class="btn-start" style="margin-top: 0; background: var(--success); color: black; border: none;" onclick="Exam.start()">BẮT ĐẦU LÀM BÀI</button>
+                    </div>
+                </div>
+
+                <div id="exam-ui" style="display: none; padding-bottom: 50px;"></div>
+                
+                <div id="exam-submit" style="display:none; position: absolute; bottom: 20px; right: 30px;">
+                    <button onclick="Exam.submit()" style="background:var(--primary); color:black; border:none; padding:12px 40px; border-radius:8px; font-weight:bold; cursor:pointer; font-family: 'JetBrains Mono'; box-shadow: 0 0 20px rgba(0,210,255,0.4);">SUBMIT DATA</button>
+                </div>
+            </div>
+
+            <div id="tab-results" class="tab-view">
+                <div style="background: linear-gradient(90deg, rgba(0, 210, 255, 0.1), transparent); border-left: 4px solid var(--primary); padding: 30px; border-radius: 8px; display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                    <div style="width: 80px; height: 80px; background: #fff; color: #000; border-radius: 50%; font-size: 30px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 4px solid var(--primary);">N</div>
+                    <div>
+                        <h1 style="font-size: 22px;">NGUYỄN VĂN NGUYÊN</h1>
+                        <p style="color: var(--text-dim); margin-top: 5px;">Class: 12A1 | Rank: <span style="color:var(--premium)">Platinum Member</span></p>
+                    </div>
+                </div>
+                <div class="widget" style="flex:1;">
+                    <h3 style="margin-bottom: 20px; color: var(--primary); font-family: 'JetBrains Mono';">/// HISTORY_LOGS</h3>
+                    <table class="schedule-table">
+                        <thead><tr><th>Thời gian</th><th>Môn thi</th><th>Điểm số</th><th>Đánh giá</th></tr></thead>
+                        <tbody id="history-log">
+                            <tr><td colspan="4" style="text-align:center; padding:30px; color:var(--text-dim)">Chưa có dữ liệu bài thi. Vui lòng vào mục "Đấu Trường".</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="widget" style="text-align: center; padding-bottom: 40px;">
+                <div style="font-weight: 700; color: var(--accent); letter-spacing: 2px; font-size: 11px; margin-bottom: 20px; font-family: 'JetBrains Mono';">SYSTEM AUDIO</div>
+                <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500&auto=format&fit=crop&q=60" class="disk-spin" id="disk">
+                <h3 style="margin-top: 20px; font-size: 16px;">Cyber Focus</h3>
+                <p style="font-size: 12px; color: var(--text-dim);">Lofi Beats 2026</p>
+                <button onclick="toggleMusic()" id="btn-play" style="margin-top: 20px; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--glass-border); padding: 8px 25px; border-radius: 20px; font-size: 12px; cursor: pointer; transition: 0.3s;">PAUSE</button>
+            </div>
+
+            <div class="widget">
+                <h3 style="font-size: 14px; margin-bottom: 15px; color: var(--success);">System Status</h3>
+                <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 13px;"><span>CPU Core</span> <span style="color:var(--primary)">34%</span></div>
+                <div style="width:100%; background:rgba(255,255,255,0.1); height:4px; border-radius:2px;"><div style="width:34%; background:var(--primary); height:100%; border-radius:2px;"></div></div>
+                
+                <div style="display:flex; justify-content:space-between; margin-bottom: 10px; margin-top: 15px; font-size: 13px;"><span>Memory</span> <span style="color:var(--accent)">68%</span></div>
+                <div style="width:100%; background:rgba(255,255,255,0.1); height:4px; border-radius:2px;"><div style="width:68%; background:var(--accent); height:100%; border-radius:2px;"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="reader">
+        <div class="doc-box">
+            <div style="padding: 20px 40px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; background: #18181b; border-radius: 20px 20px 0 0;">
+                <h3 id="doc-title" style="color: var(--primary); font-family: 'JetBrains Mono';">DOCUMENT VIEWER</h3>
+                <button onclick="Reader.close()" style="background:var(--danger); border:none; color:white; padding: 8px 20px; border-radius: 6px; cursor:pointer; font-weight: bold;">Đóng X</button>
+            </div>
+            <div class="doc-body" id="doc-body"></div>
+        </div>
+    </div>
+
+    <div id="premium-modal">
+        <div style="background: var(--bg-panel); border: 1px solid var(--premium); border-radius: 24px; padding: 40px; max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto; text-align: center; position: relative; box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);">
+            <button onclick="closePremium()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
+            
+            <h1 style="color: var(--premium); margin-bottom: 10px; font-family: 'JetBrains Mono'; text-transform: uppercase;">Nâng cấp KiritoUltra Premium</h1>
+            <p style="color: var(--text-dim); margin-bottom: 40px;">Mở khóa sức mạnh AI, Ngân hàng đề thi VIP và Tính năng dự báo điểm số.</p>
+
+            <div class="pricing-container" style="margin: 0 auto;">
+                <div class="price-card">
+                    <h3>STARTER</h3>
+                    <div class="price">50K<span style="font-size: 14px; color: #666;">/tháng</span></div>
+                    <ul class="features">
+                        <li>Truy cập Thư viện cơ bản</li>
+                        <li>Lịch học thông minh</li>
+                        <li>Quảng cáo: Có</li>
+                    </ul>
+                    <button class="btn-buy basic" onclick="buyPremium()">Đăng Ký</button>
+                </div>
+
+                <div class="price-card popular">
+                    <div style="position: absolute; top: 0; background: var(--premium); color: black; padding: 5px 15px; border-radius: 0 0 10px 10px; font-weight: bold; font-size: 12px;">KHUYÊN DÙNG</div>
+                    <h3>ULTRA PRO</h3>
+                    <div class="price" style="color: var(--premium)">99K<span style="font-size: 14px; color: #888;">/vĩnh viễn</span></div>
+                    <ul class="features">
+                        <li style="color: white">✓ Mở khóa <b>Trợ lý AI (GPT-4)</b></li>
+                        <li style="color: white">✓ 1000+ Đề thi thử các trường</li>
+                        <li style="color: white">✓ Phân tích biểu đồ học lực</li>
+                        <li style="color: white">✓ Không quảng cáo</li>
+                    </ul>
+                    <button class="btn-buy gold" onclick="buyPremium()">NÂNG CẤP NGAY</button>
+                </div>
+
+                <div class="price-card">
+                    <h3>MENTOR 1:1</h3>
+                    <div class="price">500K<span style="font-size: 14px; color: #666;">/khóa</span></div>
+                    <ul class="features">
+                        <li>Tất cả quyền lợi Ultra Pro</li>
+                        <li>Gia sư kèm 1:1 qua Zalo</li>
+                        <li>Lộ trình cá nhân hóa</li>
+                    </ul>
+                    <button class="btn-buy basic" onclick="buyPremium()">Liên Hệ</button>
+                </div>
+            </div>
+            
+            <p style="margin-top: 30px; font-size: 12px; color: var(--text-dim);">Thanh toán an toàn qua MoMo / Banking. Hỗ trợ kích hoạt ngay lập tức.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. DỮ LIỆU KHOA HỌC CHUẨN (CÓ CÔNG THỨC) ---
+        const CONTENT_DB = {
+            math: `
+                <h1 style="color:var(--primary)">TOÁN HỌC 12 - GIẢI TÍCH & HÌNH HỌC</h1>
+                <h3 class="chap-title">CHƯƠNG I: ỨNG DỤNG ĐẠO HÀM</h3>
+                <p><b>1. Tính đơn điệu của hàm số:</b><br>
+                Cho hàm số $y = f(x)$ có đạo hàm trên $K$.<br>
+                - Nếu $f'(x) > 0, \\forall x \\in K$ thì hàm số đồng biến trên $K$.<br>
+                - Nếu $f'(x) < 0, \\forall x \\in K$ thì hàm số nghịch biến trên $K$.</p>
+                <div class="formula">Điều kiện đủ: $f'(x) \\ge 0$ (dấu bằng xảy ra tại hữu hạn điểm)</div>
+                
+                <h3 class="chap-title">CHƯƠNG II: HÀM SỐ MŨ & LOGARIT</h3>
+                <p><b>Các công thức Logarit quan trọng:</b></p>
+                <div class="formula">$\\log_a(b.c) = \\log_a b + \\log_a c$</div>
+                <div class="formula">$\\log_a(b^n) = n.\\log_a b$</div>
+                <div class="formula">Đổi cơ số: $\\log_a b = \\frac{\\ln b}{\\ln a}$</div>
+                
+                <h3 class="chap-title">CHƯƠNG III: NGUYÊN HÀM - TÍCH PHÂN</h3>
+                <p><b>Bảng nguyên hàm cơ bản:</b></p>
+                <div class="formula">$\\int x^n dx = \\frac{x^{n+1}}{n+1} + C$ ($n \\ne -1$)</div>
+                <div class="formula">$\\int \\frac{1}{x} dx = \\ln|x| + C$</div>
+                <div class="formula">$\\int e^x dx = e^x + C$</div>
+                
+                <h3 class="chap-title">HÌNH HỌC KHÔNG GIAN OXYZ</h3>
+                <p>Phương trình mặt cầu tâm $I(a;b;c)$, bán kính $R$:</p>
+                <div class="formula">$(x-a)^2 + (y-b)^2 + (z-c)^2 = R^2$</div>
+            `,
+            phys: `
+                <h1 style="color:var(--primary)">VẬT LÝ 12 - CƠ, SÓNG, ĐIỆN</h1>
+                <h3 class="chap-title">CHƯƠNG I: DAO ĐỘNG CƠ</h3>
+                <p><b>1. Phương trình dao động điều hòa:</b></p>
+                <div class="formula">$x = A\\cos(\\omega t + \\varphi)$</div>
+                <p>Trong đó: $A$ là biên độ, $\\omega$ là tần số góc, $\\varphi$ là pha ban đầu.</p>
+                <p><b>2. Con lắc lò xo:</b> Tần số góc $\\omega = \\sqrt{\\frac{k}{m}}$</p>
+                
+                <h3 class="chap-title">CHƯƠNG III: DÒNG ĐIỆN XOAY CHIỀU</h3>
+                <p><b>Định luật Ohm cho toàn mạch:</b></p>
+                <div class="formula">$I = \\frac{U}{Z}$</div>
+                <p><b>Tổng trở Z:</b></p>
+                <div class="formula">$Z = \\sqrt{R^2 + (Z_L - Z_C)^2}$</div>
+                <p>Với $Z_L = \\omega L$ (Cảm kháng), $Z_C = \\frac{1}{\\omega C}$ (Dung kháng)</p>
+
+                <h3 class="chap-title">SÓNG ÁNH SÁNG</h3>
+                <p>Khoảng vân giao thoa $i$:</p>
+                <div class="formula">$i = \\frac{\\lambda D}{a}$</div>
+            `,
+            chem: `
+                <h1 style="color:var(--primary)">HÓA HỌC 12 - HỮU CƠ & VÔ CƠ</h1>
+                <h3 class="chap-title">CHƯƠNG I: ESTE - LIPIT</h3>
+                <p><b>1. Phản ứng xà phòng hóa:</b></p>
+                <div class="formula">$RCOOR' + NaOH \\xrightarrow{t^o} RCOONa + R'OH$</div>
+                <p><b>2. Chất béo:</b> Là trieste của glixerol với các axit béo (panmitic, stearic, oleic, linoleic).</p>
+                
+                <h3 class="chap-title">CHƯƠNG V: ĐẠI CƯƠNG KIM LOẠI</h3>
+                <p><b>Dãy điện hóa kim loại:</b></p>
+                <div class="formula">K Na Ba Ca Mg Al Zn Fe Ni Sn Pb H Cu Hg Ag Pt Au</div>
+                <p>Nguyên tắc điều chế: Khử ion kim loại thành nguyên tử kim loại ($M^{n+} + ne \\to M$).</p>
+                
+                <h3 class="chap-title">NHẬN BIẾT ION</h3>
+                <p>- Ion $SO_4^{2-}$: Dùng dung dịch $BaCl_2$ &rarr; kết tủa trắng $BaSO_4$.</p>
+                <p>- Ion $Cl^{-}$: Dùng dung dịch $AgNO_3$ &rarr; kết tủa trắng $AgCl$.</p>
+            `,
+            eng: `
+                <h1 style="color:var(--primary)">ENGLISH 12 - ACADEMIC REVIEW</h1>
+                <h3 class="chap-title">1. TENSE REVISION (Các thì quan trọng)</h3>
+                <p><b>Present Perfect:</b> $S + have/has + V3/ed$</p>
+                <p>Usage: Hành động xảy ra trong quá khứ không rõ thời gian hoặc kết quả còn ở hiện tại.</p>
+                <p><i>Ex: I have finished my homework.</i></p>
+                
+                <h3 class="chap-title">2. RELATIVE CLAUSES (Mệnh đề quan hệ)</h3>
+                <p><b>Defining & Non-defining clauses:</b></p>
+                <p>- <b>Who:</b> People (Subject)</p>
+                <p>- <b>Whom:</b> People (Object)</p>
+                <p>- <b>Which:</b> Things</p>
+                
+                <h3 class="chap-title">3. COLLOCATIONS (Cụm từ cố định)</h3>
+                <div class="formula">Make an effort / Do homework / Take a break</div>
+                <p>Learn these by heart for the exam!</p>
+            `,
+            bio: `<h1 style="color:var(--primary)">SINH HỌC 12</h1><h3 class="chap-title">DI TRUYỀN HỌC</h3><p>Cấu trúc ADN, Cơ chế nhân đôi, Phiên mã, Dịch mã...</p>`,
+            lit: `<h1 style="color:var(--primary)">NGỮ VĂN 12</h1><h3 class="chap-title">NGHỊ LUẬN VĂN HỌC</h3><p>Phân tích "Người lái đò Sông Đà", "Vợ chồng A Phủ"...</p>`
+        };
+
+        // --- 2. NGÂN HÀNG CÂU HỎI ---
+        const QUESTION_BANK = {
+            math: [
+                {q: "Hàm số y = x^3 - 3x + 2 đồng biến trên khoảng nào?", a: ["(-1; 1)", "(-vc; -1) và (1; +vc)", "(0; +vc)", "(-vc; 0)"], c: 1},
+                {q: "Nguyên hàm của f(x) = 2x + 1 là?", a: ["x^2 + x + C", "2x^2 + 1", "x^2 + C", "2"], c: 0},
+                {q: "Thể tích khối cầu bán kính R là?", a: ["4/3 πR^3", "4πR^2", "πR^3", "2πR^2"], c: 0},
+                {q: "Nghiệm của phương trình 2^x = 8 là?", a: ["x=2", "x=4", "x=3", "x=8"], c: 2},
+                {q: "Cho số phức z = 3 - 4i. Mô đun của z là?", a: ["3", "4", "5", "7"], c: 2}
+            ],
+            phys: [
+                {q: "Công thức tính chu kỳ con lắc đơn?", a: ["T = 2π√(l/g)", "T = 2π√(g/l)", "T = √(l/g)", "T = 2π√(k/m)"], c: 0},
+                {q: "Sóng cơ không truyền được trong môi trường nào?", a: ["Rắn", "Lỏng", "Khí", "Chân không"], c: 3},
+                {q: "Trong mạch RLC nối tiếp, hiện tượng cộng hưởng xảy ra khi?", a: ["ZL > ZC", "ZL = ZC", "ZL < ZC", "R = 0"], c: 1},
+                {q: "Máy biến áp là thiết bị dùng để?", a: ["Thay đổi tần số", "Thay đổi điện áp xoay chiều", "Biến đổi dòng 1 chiều", "Tạo ra điện năng"], c: 1},
+                {q: "Vận tốc ánh sáng trong chân không là?", a: ["3.10^8 m/s", "3.10^6 m/s", "340 m/s", "3.10^5 km/h"], c: 0}
+            ],
+            chem: [
+                {q: "Kim loại nào sau đây có tính khử mạnh nhất?", a: ["Cu", "Fe", "Mg", "Ag"], c: 2},
+                {q: "Este CH3COOC2H5 có tên gọi là?", a: ["Metyl axetat", "Etyl axetat", "Etyl fomat", "Propyl axetat"], c: 1},
+                {q: "Dung dịch làm quỳ tím hóa xanh là?", a: ["NaOH", "HCl", "NaCl", "H2SO4"], c: 0},
+                {q: "Sắt (Fe) có hóa trị mấy trong FeO?", a: ["I", "II", "III", "IV"], c: 1},
+                {q: "Polime nào sau đây dùng làm tơ?", a: ["PE", "PVC", "Nilon-6,6", "Cao su"], c: 2}
+            ],
+            eng: [
+                {q: "She _____ here since 2010.", a: ["lives", "lived", "has lived", "is living"], c: 2},
+                {q: "If it rains, we _____ at home.", a: ["stay", "would stay", "will stay", "stayed"], c: 2},
+                {q: "The book _____ I bought yesterday is interesting.", a: ["who", "which", "whom", "where"], c: 1},
+                {q: "He runs very _____.", a: ["fast", "fastly", "good", "bad"], c: 0},
+                {q: "Choose the synonym of 'Start':", a: ["End", "Finish", "Begin", "Stop"], c: 2}
+            ],
+            bio: [ {q: "Đơn phân của ADN là?", a: ["Nucleotit", "Axit amin", "Glucozo", "Axit béo"], c: 0} ], 
+            lit: [ {q: "Tác giả của 'Tuyên ngôn Độc lập' là?", a: ["Tố Hữu", "Hồ Chí Minh", "Nam Cao", "Xuân Diệu"], c: 1} ] 
+        };
+
+        // --- CORE FUNCTIONS ---
+        const Reader = {
+            open(key) {
+                document.getElementById('doc-title').innerText = "DATA SOURCE: " + key.toUpperCase();
+                document.getElementById('doc-body').innerHTML = CONTENT_DB[key] || "<p>Dữ liệu đang được cập nhật từ máy chủ...</p>";
+                document.getElementById('reader').style.display = 'flex';
+            },
+            close() { document.getElementById('reader').style.display = 'none'; }
+        };
+
+        const Exam = {
+            currentSubject: null,
+            timerInterval: null,
+            timeLeft: 0,
+            
+            selectSubject(subId, el) {
+                document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('selected'));
+                el.classList.add('selected');
+                
+                this.currentSubject = subId;
+                const subNames = {math: "Toán Học", phys: "Vật Lý", chem: "Hóa Học", eng: "Tiếng Anh", bio: "Sinh Học", lit: "Ngữ Văn"};
+                document.getElementById('selected-info').innerText = `>> SELECTED: ${subNames[subId]} | TIME: 15 MINS`;
+                document.getElementById('start-area').style.display = 'block';
+            },
+
+            start() {
+                if (!this.currentSubject) return;
+                
+                let questions = QUESTION_BANK[this.currentSubject] || [];
+                // Duplicate for demo
+                if(questions.length < 10) questions = [...questions, ...questions, ...questions];
+                
+                document.getElementById('exam-start').style.display = 'none';
+                document.getElementById('exam-ui').style.display = 'block';
+                document.getElementById('exam-submit').style.display = 'block';
+                document.getElementById('timer').style.display = 'block';
+                document.getElementById('exam-title-display').innerText = "RUNNING: " + this.currentSubject.toUpperCase();
+
+                document.getElementById('exam-ui').innerHTML = questions.map((item, idx) => `
+                    <div class="question-item" id="q-item-${idx}">
+                        <p style="font-weight:600; margin-bottom:10px; color:var(--primary)">CÂU ${idx+1}: <span style="color:white">${item.q}</span></p>
+                        ${item.a.map((opt, i) => `<label class="q-opt"><input type="radio" name="q${idx}" value="${i}"> ${opt}</label>`).join('')}
+                    </div>
+                `).join('');
+
+                this.timeLeft = 900; // 15 mins
+                this.timerInterval = setInterval(() => {
+                    this.timeLeft--;
+                    let m = Math.floor(this.timeLeft/60).toString().padStart(2,'0');
+                    let s = (this.timeLeft%60).toString().padStart(2,'0');
+                    document.getElementById('timer').innerText = `${m}:${s}`;
+                    if(this.timeLeft <= 0) this.submit();
+                }, 1000);
+            },
+
+            submit() {
+                clearInterval(this.timerInterval);
+                let questions = QUESTION_BANK[this.currentSubject];
+                let totalQs = document.querySelectorAll('.question-item').length;
+                let score = 0;
+                
+                for(let i=0; i<totalQs; i++) {
+                    let realQ = questions[i % questions.length];
+                    let checked = document.querySelector(`input[name="q${i}"]:checked`);
+                    if(checked && parseInt(checked.value) == realQ.c) {
+                        score++;
+                        document.getElementById(`q-item-${i}`).style.borderColor = '#00ff9d';
+                    } else {
+                        document.getElementById(`q-item-${i}`).style.borderColor = '#ff3366';
+                    }
+                }
+
+                let finalScore = (score / totalQs) * 10;
+                finalScore = Math.round(finalScore * 100) / 100;
+
+                let date = new Date().toLocaleString();
+                let log = document.getElementById('history-log');
+                if(log.innerHTML.includes("Chưa có")) log.innerHTML = "";
+                
+                let rankText = finalScore >= 8 ? "XUẤT SẮC" : (finalScore >= 5 ? "ĐẠT" : "TRƯỢT");
+                let color = finalScore >= 5 ? "#00ff9d" : "#ff3366";
+                
+                log.innerHTML = `<tr><td>${date}</td><td>${this.currentSubject.toUpperCase()}</td><td style="color:${color}; font-weight:bold">${finalScore}</td><td style="color:${color}">${rankText}</td></tr>` + log.innerHTML;
+                
+                alert(`KẾT QUẢ: ${finalScore}/10\nBạn đã trả lời đúng ${score}/${totalQs} câu.`);
+                
+                // Reset
+                document.getElementById('exam-start').style.display = 'block';
+                document.getElementById('start-area').style.display = 'none';
+                document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('selected'));
+                this.currentSubject = null;
+                
+                document.getElementById('exam-ui').style.display = 'none';
+                document.getElementById('exam-submit').style.display = 'none';
+                document.getElementById('timer').style.display = 'none';
+                nav('results', document.querySelectorAll('.menu-item')[3]);
+            }
+        };
+
+        function nav(tab, el) {
+            document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            document.getElementById('tab-'+tab).classList.add('active');
+            if(el) el.classList.add('active');
+        }
+
+        // --- PREMIUM LOGIC ---
+        function checkPremium() {
+            // Luôn mở modal vì user chưa nâng cấp
+            openPremium();
+        }
+
+        function openPremium() {
+            document.getElementById('premium-modal').style.display = 'flex';
+        }
+
+        function closePremium() {
+            document.getElementById('premium-modal').style.display = 'none';
+        }
+
+        function buyPremium() {
+            // Redirect Zalo
+            window.open("https://zalo.me/0383276058", "_blank");
+        }
+
+        // --- SYSTEM INIT ---
+        const audio = document.getElementById('audio');
+        const disk = document.getElementById('disk');
+
+        function initApp() {
+            document.getElementById('splash').style.opacity = '0';
+            setTimeout(()=>document.getElementById('splash').style.display='none', 800);
+            document.getElementById('app').style.opacity = '1';
+            
+            // Try Auto play audio
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log("Audio requires interaction"));
+            
+            let day = new Date().getDay(); 
+            if(day >= 1 && day <= 6) {
+                let row = document.getElementById(`row-${day+1}`);
+                if(row) row.classList.add('today-row');
+            }
+        }
+
+        function toggleMusic() {
+            if(audio.paused) { 
+                audio.play(); 
+                disk.style.animationPlayState='running'; 
+                document.getElementById('btn-play').innerText="PAUSE";
+                disk.style.opacity = "1";
+            } else { 
+                audio.pause(); 
+                disk.style.animationPlayState='paused'; 
+                document.getElementById('btn-play').innerText="PLAY";
+                disk.style.opacity = "0.6";
+            }
+        }
+
+        setInterval(() => {
+            let d = new Date();
+            document.getElementById('clock').innerText = d.getHours() + ":" + String(d.getMinutes()).padStart(2,'0');
+        }, 1000);
+    </script>
+</body>
+</html>
